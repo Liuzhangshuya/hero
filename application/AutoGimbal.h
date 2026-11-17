@@ -19,7 +19,7 @@
 /**@brief:���ͽṹ�����?
  *@param:pitch���� yaw����
  */
-__packed struct __PackToVision_Def 
+__PACKED_STRUCT __PackToVision_Def
 {
     // uint8_t head;
 

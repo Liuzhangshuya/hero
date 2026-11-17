@@ -16,6 +16,7 @@
   */
 
 #include "shoot.h"
+#include <stdlib.h>
 #include "main.h"
 
 #include "cmsis_os.h"

@@ -359,8 +359,8 @@ void gimbal_behaviour_control_set(fp32 *add_yaw, fp32 *add_pitch, gimbal_control
             gimbal_AUTO_angle_control(add_yaw, add_pitch, gimbal_control_set);
         else 
         {
-            add_pitch = 0;
-            add_yaw = 0;
+            *add_pitch = 0.0f;
+            *add_yaw = 0.0f;
         }
     }
 }
@@ -425,12 +425,12 @@ static void gimbal_init_control(fp32 *yaw, fp32 *pitch, gimbal_control_t *gimbal
     //初始化状态控制量计算
     if (fabs(INIT_PITCH_SET - gimbal_control_set->gimbal_pitch_motor.absolute_angle) > GIMBAL_INIT_ANGLE_ERROR)
     {
-        *pitch = (INIT_PITCH_SET - gimbal_control_set->gimbal_pitch_motor.absolute_angle) * GIMBAL_INIT_PITCH_SPEED;
+        *pitch = 0.0f; /* Home is captured and ramped in gimbal_task.c. */
         *yaw = 0.0f;
     }
     else
     {
-        *pitch = (INIT_PITCH_SET - gimbal_control_set->gimbal_pitch_motor.absolute_angle) * GIMBAL_INIT_PITCH_SPEED;
+        *pitch = 0.0f; /* Home is captured and ramped in gimbal_task.c. */
         *yaw = (INIT_YAW_SET - gimbal_control_set->gimbal_yaw_motor.relative_angle) * GIMBAL_INIT_YAW_SPEED;
     }
 }
