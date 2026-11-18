@@ -746,6 +746,11 @@
               <FilePath>..\application\servo_task.c</FilePath>
             </File>
             <File>
+              <FileName>vision_protocol.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\application\vision_protocol.c</FilePath>
+            </File>
+            <File>
               <FileName>AutoGimbal.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\application\AutoGimbal.c</FilePath>

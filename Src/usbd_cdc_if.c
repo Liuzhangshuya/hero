@@ -23,8 +23,6 @@
 #include "usbd_cdc_if.h"
 
 /* USER CODE BEGIN INCLUDE */
-#include "FreeRTOS.h"
-#include "queue.h"
 #include "Service_USB.h"
 /* USER CODE END INCLUDE */
 
@@ -268,18 +266,10 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
-  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
+  /* Consume before rearming the endpoint, which may reuse Buf immediately. */
+  Service_USB_Receive(Buf, *Len);
+  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, Buf);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
-	// 写入消息队列 20240317 cac
-	BaseType_t pxHigherPriorityTaskWoken;
-  for (int i = 0; i < *Len; ++i)
-  {
-    if (xQueueSendToBackFromISR(usb_cdc_queue_handle, (const void *)(Buf + i), &pxHigherPriorityTaskWoken) != pdTRUE)
-    {
-      break;
-    }
-  }	
-  portYIELD_FROM_ISR(pxHigherPriorityTaskWoken);
   return (USBD_OK);
   /* USER CODE END 6 */
 }
@@ -300,7 +290,7 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
   uint8_t result = USBD_OK;
   /* USER CODE BEGIN 7 */
   USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
-  if (hcdc->TxState != 0){
+  if (hcdc == NULL || hcdc->TxState != 0){
     return USBD_BUSY;
   }
   USBD_CDC_SetTxBuffer(&hUsbDeviceFS, Buf, Len);

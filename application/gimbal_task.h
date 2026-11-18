@@ -31,6 +31,7 @@
 #include "CAN_receive.h"
 #include "pid.h"
 #include "remote_control.h"
+#include "vision_protocol.h"
 //pitch speed close-loop PID params, max out and max iout
 
 
@@ -43,7 +44,7 @@
 #define PITCH_SPEED_PID_KP        12000.0f//7200
 #define PITCH_SPEED_PID_KI        0.0f//60
 #define PITCH_SPEED_PID_KD        0.0f//0.5
-#define PITCH_SPEED_PID_MAX_OUT   30000.0f
+#define PITCH_SPEED_PID_MAX_OUT   25000.0f
 #define PITCH_SPEED_PID_MAX_IOUT  10000.0f
 
 //yaw speed close-loop PID params, max out and max iout
@@ -73,7 +74,7 @@
 
 //pitch encode angle close-loop PID params, max out and max iout
 //pitch �ǶȻ� �Ƕ��ɱ����� PID�����Լ� PID���������������
-#define PITCH_ENCODE_RELATIVE_PID_KP 0.0f
+#define PITCH_ENCODE_RELATIVE_PID_KP 8.0f
 #define PITCH_ENCODE_RELATIVE_PID_KI 0.00f
 #define PITCH_ENCODE_RELATIVE_PID_KD 0.0f
 
@@ -99,7 +100,7 @@
 #define PITCH_SPEED_AUTO_PID_KP        7000.0f				
 #define PITCH_SPEED_AUTO_PID_KI        65.0f					
 #define PITCH_SPEED_AUTO_PID_KD        0.0f					
-#define PITCH_SPEED_AUTO_PID_MAX_OUT   30000.0f			
+#define PITCH_SPEED_AUTO_PID_MAX_OUT   25000.0f
 #define PITCH_SPEED_AUTO_PID_MAX_IOUT  5000.0f	
 
 //YAW AUTO AIM
@@ -138,7 +139,7 @@
 
 
 #define YAW_RC_SEN    -0.000005f
-#define PITCH_RC_SEN  -0.000005f //0.005
+#define PITCH_RC_SEN  -0.000001f // Stick polarity corrected by physical direction check.
 
 #define YAW_MOUSE_SEN   0.00005f
 #define PITCH_MOUSE_SEN 0.00015f
@@ -152,6 +153,24 @@
 //��̨����ģʽ �궨�� 0 Ϊ��ʹ�ò���ģʽ
 #define GIMBAL_TEST_MODE 0
 
+/* New GM6020: CAN2, motor ID 2, feedback 0x206. Stick polarity follows
+ * the operator direction check; feedback and motor output signs stay paired.
+ * Raising pitch decreases the encoder: MIN is the physical upper stop.
+ * Upper pose was selected near ECD 6379; stop at 6400 for about 1 deg margin.
+ * Lower stop stays at 8070; these are operator soft stops, not hard-stop calibration.
+ */
+#define PITCH_USE_FIXED_ENCODER_LIMITS 1
+#define PITCH_SOFT_MIN_ECD 6400
+#define PITCH_SOFT_MAX_ECD 8070
+#define PITCH_STARTUP_SETTLE_MS 1000U
+#define PITCH_FEEDBACK_TIMEOUT_MS 50U
+/* Fixed physical pitch pose selected from live encoder readings. */
+#define PITCH_MID_HOME_ECD 7211
+#define PITCH_MID_RETURN_STEP 0.0005f
+#define PITCH_MID_RETURN_ERROR 0.005f
+/* Home-only load compensation; Ki is applied once per 1 ms control cycle. */
+#define PITCH_MID_HOME_ANGLE_KI 0.002f
+#define PITCH_MID_HOME_MAX_IOUT 0.8f
 #define PITCH_TURN  0//	ƽ��ͷ1	���ϻ�ͷ0
 #define YAW_TURN    1
 
@@ -269,6 +288,7 @@ typedef struct
     fp32 absolute_angle_set; //rad
     fp32 motor_gyro;         //rad/s
     fp32 motor_gyro_set;
+    fp32 auto_rate_feedforward; // rad/s, from the predicted PC command
     fp32 motor_speed;
     fp32 raw_cmd_current;
     fp32 current_set;
@@ -321,6 +341,15 @@ typedef struct
 		unsigned char ShootMode;
 		 fp32 yaw_add_yaw_angle;
 		 fp32 pitch_add_pitch_angle;
+    fp32 pitch_home_angle;
+    uint32_t pitch_feedback_count;
+    uint32_t pitch_feedback_tick;
+    uint8_t pitch_home_valid;
+    uint8_t pitch_return_active;
+    uint8_t pitch_return_done;
+    uint8_t pitch_feedback_lost;
+    vision_target_t vision_target;
+    uint8_t vision_control_active;
 } gimbal_control_t;
 
 /******************************************    tianjain   **********************************************/	

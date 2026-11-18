@@ -135,6 +135,7 @@ extern const motor_measure_t *get_yaw_gimbal_motor_measure_point(void);
   * @retval         �������ָ��?
   */
 extern const motor_measure_t *get_pitch_gimbal_motor_measure_point(void);
+extern uint32_t get_pitch_gimbal_motor_feedback_count(void);
 
 /**
   * @brief          return the trigger 2006 motor data point

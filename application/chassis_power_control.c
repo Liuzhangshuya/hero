@@ -81,9 +81,10 @@ void Power_Control(chassis_move_t *chassis_move)
 	// TODO 找初始化的位置
 	
 	SuperCap_InitDefaultControl(&SuperCap_Control);
-	get_chassis_power_and_buffer(
-			&SuperCap_Control.referee_power_limit, 
-			&SuperCap_Control.referee_energy_buffer);
+	get_chassis_power_and_buffer(&chassis_power, &chassis_power_buffer);
+    /* The referee API writes floats; never pass pointers to 16-bit fields. */
+    SuperCap_Control.referee_power_limit = (uint16_t)chassis_power;
+    SuperCap_Control.referee_energy_buffer = (uint16_t)chassis_power_buffer;
 	CAN_cmd_SuperCap(&SuperCap_Control);
 
 /*

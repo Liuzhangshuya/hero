@@ -181,9 +181,8 @@ void MX_FREERTOS_Init(void) {
 //    osThreadDef(USBTask, usb_task, osPriorityNormal, 0, 128);
 //    usb_task_handle = osThreadCreate(osThread(USBTask), NULL);
 
-//		xTaskCreate(Task_USB, "Task.USB", 512, NULL, osPriorityHigh, &task_usb_handle);
-//    usb_cdc_queue_handle = xQueueCreate(USB_CDC_QUEUE_BUF_LEN, sizeof(uint8_t));
-		
+    Service_USB_Init();
+
     osThreadDef(BATTERY_VOLTAGE, battery_voltage_task, osPriorityNormal, 0, 128);
     battery_voltage_handle = osThreadCreate(osThread(BATTERY_VOLTAGE), NULL);
 

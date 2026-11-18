@@ -1,0 +1,5 @@
+
+# STM32 for VSCode generated build output
+/build/
+/.stm32env
+/STM32Make.make

@@ -192,6 +192,9 @@ void INS_task(void const *pvParameters)
 
     PID_init(&imu_temp_pid, PID_POSITION, imu_temp_PID, TEMPERATURE_PID_MAX_OUT, TEMPERATURE_PID_MAX_IOUT);
     AHRS_init(INS_quat, INS_accel, INS_mag);
+    /* Publish the initial attitude before gimbal/chassis tasks capture home. */
+    get_angle(INS_quat, INS_angle + INS_YAW_ADDRESS_OFFSET,
+              INS_angle + INS_PITCH_ADDRESS_OFFSET, INS_angle + INS_ROLL_ADDRESS_OFFSET);
 
     accel_fliter_1[0] = accel_fliter_2[0] = accel_fliter_3[0] = INS_accel[0];
     accel_fliter_1[1] = accel_fliter_2[1] = accel_fliter_3[1] = INS_accel[1];
