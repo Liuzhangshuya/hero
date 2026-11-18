@@ -44,7 +44,6 @@
 
 #include "user_lib.h"
 #include "AutoGimbal.h"
-#include "SolveTrajectory.h"
 #include "remote_control.h"
 //当云台在校准, 设置蜂鸣器频率和强度
 #define gimbal_warn_buzzer_on() buzzer_on(31, 20000)
@@ -355,13 +354,7 @@ void gimbal_behaviour_control_set(fp32 *add_yaw, fp32 *add_pitch, gimbal_control
     }
     else if (gimbal_control_set->gimbal_motor_mode == GIMBAL_AUTO)
     {
-        if (packet_vision.tracking == 1)
-            gimbal_AUTO_angle_control(add_yaw, add_pitch, gimbal_control_set);
-        else 
-        {
-            *add_pitch = 0.0f;
-            *add_yaw = 0.0f;
-        }
+        gimbal_AUTO_angle_control(add_yaw, add_pitch, gimbal_control_set);
     }
 }
 
@@ -618,32 +611,16 @@ static void gimbal_absolute_spin_angle_control(fp32 *yaw,  fp32 *pitch,gimbal_co
 		*pitch = pitch_channel * PITCH_RC_SEN + gimbal_control_set->gimbal_rc_ctrl->mouse.y * PITCH_MOUSE_SEN;
 		
 }
-//static void gimbal_AUTO_angle_control(fp32 *yaw, fp32 *pitch, gimbal_control_t *gimbal_control_set)
-//{
-//    if (yaw == NULL || pitch == NULL || gimbal_control_set == NULL)
-//    {
-//        return;
-//    }
-//    // autoSolveTrajectory(pitch, yaw, &aim_x1, &aim_y1, &aim_z1);
-//    // *yaw -= 0.5f * PI; // 20240312 cac
-
-//    fp32 yaw_angle_target, pitch_angle_target;
-//    autoSolveTrajectory(&pitch_angle_target, &yaw_angle_target, &aim_x1, &aim_y1, &aim_z1);
-//    *yaw = yaw_angle_target - gimbal_control_set->gimbal_yaw_motor.absolute_angle;
-//    *pitch = pitch_angle_target - gimbal_control_set->gimbal_pitch_motor.absolute_angle;
-//}
-      
-
-static void gimbal_AUTO_angle_control(fp32 *yaw, fp32 *pitch, gimbal_control_t *gimbal_control_set)
+/* The PC supplies the final aiming direction; no board-side ballistic solve. */
+static void gimbal_AUTO_angle_control(fp32 *yaw, fp32 *pitch, gimbal_control_t *control)
 {
-    if (yaw == NULL || pitch == NULL || gimbal_control_set == NULL)
-    {
+    *yaw = 0.0f;
+    *pitch = 0.0f;
+    if (!AutoGimbal_GetTarget(&control->vision_target))
         return;
-    }
-		
-    autoSolveTrajectory(&gimbal_control_set->gimbal_pitch_motor.aoto_angle_set, &gimbal_control_set->gimbal_yaw_motor.aoto_angle_set, &aim_x1, &aim_y1, &aim_z1);
 
-    *yaw =gimbal_control_set->gimbal_yaw_motor.aoto_angle_set - gimbal_control_set->gimbal_yaw_motor.absolute_angle;
-    *pitch = gimbal_control_set->gimbal_pitch_motor.aoto_angle_set - gimbal_control_set->gimbal_pitch_motor.absolute_angle;
-
+    control->gimbal_yaw_motor.aoto_angle_set = control->vision_target.yaw;
+    control->gimbal_pitch_motor.aoto_angle_set = control->vision_target.pitch;
+    *yaw = rad_format(control->vision_target.yaw - control->gimbal_yaw_motor.absolute_angle);
+    *pitch = rad_format(control->vision_target.pitch - control->gimbal_pitch_motor.absolute_angle);
 }

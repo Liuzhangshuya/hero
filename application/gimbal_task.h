@@ -31,6 +31,7 @@
 #include "CAN_receive.h"
 #include "pid.h"
 #include "remote_control.h"
+#include "vision_protocol.h"
 //pitch speed close-loop PID params, max out and max iout
 
 
@@ -287,6 +288,7 @@ typedef struct
     fp32 absolute_angle_set; //rad
     fp32 motor_gyro;         //rad/s
     fp32 motor_gyro_set;
+    fp32 auto_rate_feedforward; // rad/s, from the predicted PC command
     fp32 motor_speed;
     fp32 raw_cmd_current;
     fp32 current_set;
@@ -346,6 +348,8 @@ typedef struct
     uint8_t pitch_return_active;
     uint8_t pitch_return_done;
     uint8_t pitch_feedback_lost;
+    vision_target_t vision_target;
+    uint8_t vision_control_active;
 } gimbal_control_t;
 
 /******************************************    tianjain   **********************************************/	

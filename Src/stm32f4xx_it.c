@@ -246,13 +246,7 @@ void USART1_IRQHandler(void)
   /* USER CODE BEGIN USART1_IRQn 0 */
   if (RESET != __HAL_UART_GET_FLAG(&huart1, UART_FLAG_IDLE))
   {
-    while (__HAL_DMA_GET_COUNTER(huart1.hdmatx) != 0)
-    {
-				;
-    }
-    // 	//接收完成清除标志?
-    __HAL_UART_CLEAR_PEFLAG(&huart1);
-    // 自定义的中断外理函数
+    __HAL_UART_CLEAR_IDLEFLAG(&huart1);
     Usart1Receive_IDLE();
   }
   /* USER CODE END USART1_IRQn 0 */

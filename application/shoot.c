@@ -91,6 +91,7 @@ static void trigger_motor_turn_back(void);
   */
 static void shoot_bullet_control(void);
 static void shoot_bullet_control_back(void);
+static void shoot_cancel_trigger(void);
 
 
 shoot_control_t shoot_control;          //射击数据
@@ -282,6 +283,17 @@ int16_t shoot_control_loop(void)
   */
 static void shoot_set_mode(void)
 {
+    const gimbal_control_t *gimbal = get_gimbal_control_point();
+    uint8_t auto_selected = gimbal->gimbal_motor_mode == GIMBAL_AUTO;
+    static uint8_t last_auto_selected;
+    if (auto_selected != last_auto_selected)
+    {
+        shoot_cancel_trigger();
+        if (shoot_control.shoot_mode != SHOOT_STOP)
+            shoot_control.shoot_mode = SHOOT_READY;
+    }
+    last_auto_selected = auto_selected;
+
     
 
     //上拨判断， 一次开启，再次关闭
@@ -362,19 +374,45 @@ static void shoot_set_mode(void)
     // {
     //     shoot_control.shoot_mode = SHOOT_READY_BULLET;
     // }
+    /* Manual friction-wheel arming remains authoritative. In auto mode only
+     * mode=2 may run the trigger, including any unfinished manual shot. */
+    if (auto_selected)
+    {
+        uint8_t fire = gimbal->vision_control_active &&
+                       gimbal->vision_target.mode == VISION_MODE_FIRE;
+        if (!fire || shoot_control.shoot_mode == SHOOT_STOP)
+        {
+            shoot_cancel_trigger();
+            if (shoot_control.shoot_mode != SHOOT_STOP)
+                shoot_control.shoot_mode = SHOOT_READY;
+        }
+        else
+        {
+            /* Reuse the existing one-projectile indexing control. A sustained
+             * fire request starts the next index after the preceding one ends. */
+            shoot_control.shoot_mode = SHOOT_BULLET;
+        }
+    }
+
         get_shoot_heat0_limit_and_heat0(&shoot_control.heat_limit, &shoot_control.heat);
     if (!toe_is_error(REFEREE_TOE) && (shoot_control.heat + SHOOT_HEAT_REMAIN_VALUE > shoot_control.heat_limit))
     {
         if(shoot_control.shoot_mode == SHOOT_BULLET || shoot_control.shoot_mode == SHOOT_CONTINUE_BULLET)
         {
-            shoot_control.shoot_mode =SHOOT_READY_BULLET;
+            shoot_control.shoot_mode = auto_selected ? SHOOT_READY : SHOOT_READY_BULLET;
+            if (auto_selected)
+                shoot_cancel_trigger();
         }
     }
 		    //如果云台状态是 无力状态，就关闭射击
     //if (gimbal_cmd_to_shoot_stop())
-		if(switch_is_down(shoot_control.shoot_rc->rc.s[RIGHT_RC_MODE_CHANNEL]))
+		if (switch_is_down(shoot_control.shoot_rc->rc.s[RIGHT_RC_MODE_CHANNEL]) ||
+        gimbal->gimbal_motor_mode == GIMBAL_ZERO_FORCE ||
+        gimbal->gimbal_motor_mode == GIMBAL_INIT ||
+        (gimbal->gimbal_cali.step != 0 && gimbal->gimbal_cali.step != 5))
 		{
         shoot_control.shoot_mode = SHOOT_STOP;
+        shoot_cancel_trigger();
     }
 
     if (shoot_control.shoot_rc->rc.s[SHOOT_RC_MODE_CHANNEL] != shoot_control.new_s)
@@ -602,4 +640,16 @@ static void shoot_bullet_control_back(void)
     }
 		PID_calc(&shoot_control.trigger_motor_angle_pid, shoot_control.total_ecd, shoot_control.set_total_ecd);
     shoot_control.given_current = (int16_t)(shoot_control.trigger_motor_angle_pid.out);
+}
+/* Cancel both position-indexed and continuous feeding before the next PID pass. */
+static void shoot_cancel_trigger(void)
+{
+    shoot_control.move_flag = 0U;
+    shoot_control.block_time = 0U;
+    shoot_control.reverse_time = 0U;
+    shoot_control.speed_set = 0.0f;
+    shoot_control.trigger_speed_set = 0.0f;
+    shoot_control.set_total_ecd = shoot_control.total_ecd;
+    PID_clear(&shoot_control.trigger_motor_angle_pid);
+    PID_clear(&shoot_control.trigger_motor_pid);
 }

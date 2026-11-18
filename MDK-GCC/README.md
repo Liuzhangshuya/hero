@@ -60,3 +60,8 @@ cc -std=c99 -Wall -Wextra -Werror -Iapplication tests/test_gimbal_pitch_control.
 
 Building does not flash the board. The separately configured flash task resets
 the controller and should only be run when the hardware is ready for testing.
+
+The vision command receiver now accepts the 29-byte `SP` protocol over USB CDC
+and USART1. Protocol details and control behavior are documented in
+[云台SP接收协议](../doc/云台SP接收协议.md). Run `python3 tests/run_vision_tests.py`
+for protocol, transport, and gimbal/shooter host regression checks.

@@ -119,6 +119,7 @@ sourceFiles:
 - application/led_flow_task.c
 - application/servo_task.c
 - application/AutoGimbal.c
+- application/vision_protocol.c
 - application/ECterminal.c
 - supercap_sdk/src/supercap_sdk.c
 - components/devices/OLED.c

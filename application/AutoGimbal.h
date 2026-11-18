@@ -5,9 +5,10 @@
 #include "main.h"
 #include "gimbal_task.h"
 #include "stdbool.h"
+#include "vision_protocol.h"
 
 #define BUFLENGTH 128   // �����յ�����
-#define RXDATALENGTH 16 // ��Ч����
+#define RXDATALENGTH VISION_PACKET_SIZE // ��Ч����
 #define TXDATALENGTH 14 // ��Ч����
 #define AUTO_TIME 1
 #define AUTO_INIT_TIME 201
@@ -45,27 +46,6 @@ __PACKED_STRUCT __PackToVision_Def
 
 typedef struct __PackToVision_Def PackToVision_Def;
 
-typedef struct
-{
-    uint8_t header;
-    bool tracking;
-    uint8_t id;
-    uint8_t armors_num;
-    uint8_t reserved;
-    float x;
-    float y;
-    float z;
-    float yaw;
-    float vx;
-    float vy;
-    float vz;
-    float v_yaw;
-    float r1;
-    float r2;
-    float dz;
-    uint16_t checksum;
-} packetdef;
-
 typedef union
 {
     // uint8_t UsartData[12];
@@ -75,11 +55,11 @@ typedef union
 } PackToVisionUnionDef;
 extern const fp32 *INS_num;
 extern struct SolveTrajectoryParams st;
-extern packetdef packet_vision;
 
 extern void AUTO_control_init(void);
 extern void PC_vosion_task(void const *argument);
 extern void Usart1Receive_IDLE(void);
-extern uint32_t Verify_CRC16_Check_Sum(const uint8_t *pchMessage, uint32_t dwLength);
+void AutoGimbal_ReceiveUSB(const uint8_t *data, uint32_t length);
+uint8_t AutoGimbal_GetTarget(vision_target_t *target);
 // const gimbal_control_t *get_gimbal_control_point();
 #endif
